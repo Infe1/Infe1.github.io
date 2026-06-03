@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>签到码接收器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --bg: #f4f6f9;
+            --card: #fff;
+            --text: #333;
+            --muted: #999;
+            --prog-bg: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .1);
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .prog-wrap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--prog-bg);
+        }
+
+        .prog-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 100%;
+            transition: width .1s linear;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: .3rem;
+        }
+
+        .subtitle {
+            font-size: .8rem;
+            color: var(--muted);
+            margin-bottom: 1.2rem;
+        }
+
+        #content-display {
+            font-size: 1.1rem;
+            font-weight: 600;
+            word-break: break-all;
+            margin-bottom: .4rem;
+            min-height: 1.4em;
+        }
+
+        .timestamp {
+            font-size: .75rem;
+            color: var(--muted);
+            margin-bottom: 1.2rem;
+        }
+
+        #qrcode-container {
+            margin: 16px auto;
+            padding: 10px;
+            border: 1px solid #eee;
+            background: #fff;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 200px;
+            min-height: 200px;
+        }
+
+        #qrcode-container img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .placeholder {
+            color: #ccc;
+            font-size: .8rem;
+        }
+
+        #error-box {
+            color: #d93025;
+            font-size: .85rem;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .controls {
+            margin-top: 16px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: .9rem;
+            transition: background .2s;
+        }
+
+        button:hover {
+            background: #357abd;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        button.secondary:hover {
+            background: #d5d5d5;
+        }
+
+        .config-panel {
+            display: none;
+            margin-top: 16px;
+            padding: 14px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            text-align: left;
+            font-size: .85rem;
+        }
+
+        .config-panel.show {
+            display: block;
+        }
+
+        .config-panel label {
+            display: block;
+            font-size: .75rem;
+            color: #666;
+            margin-top: 8px;
+            margin-bottom: 2px;
+        }
+
+        .config-panel label:first-child {
+            margin-top: 0;
+        }
+
+        .config-panel input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: .85rem;
+        }
+
+        .config-panel input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .config-panel .save-btn {
+            margin-top: 10px;
+            width: 100%;
+            background: #52c41a;
+            color: #fff;
+        }
+
+        .history {
+            margin-top: 18px;
+            text-align: left;
+            display: none;
+        }
+
+        .history-title {
+            font-size: .8rem;
+            color: #aaa;
+            margin-bottom: 6px;
+        }
+
+        .history-list {
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 3px;
+            font-size: .75rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .history-item span:first-child {
+            color: #aaa;
+        }
+
+        .footer {
+            margin-top: 18px;
+            color: #ddd;
+            font-size: .7rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <div class="prog-wrap">
+            <div class="prog-bar" id="progress-bar"></div>
+        </div>
+        <h1>📋 签到码接收器</h1>
+        <div class="subtitle">
+            配合
+            <a href="poster.html" style="color:var(--primary);text-decoration:underline;">义父端（扫码推送）</a>
+            使用
+        </div>
+
+        <div id="content-display">加载中...</div>
+        <div class="timestamp" id="time-display">等待更新</div>
+
+        <div id="qrcode-container"><span class="placeholder">暂无数据</span></div>
+        <div id="error-box"></div>
+
+        <div class="controls">
+            <button id="refresh-btn" onclick="manualRefresh()">立即刷新</button>
+            <button class="secondary" onclick="toggleConfig()">⚙</button>
+        </div>
+
+        <div class="config-panel" id="config-panel">
+            <label>API 地址</label>
+            <input type="text" id="cfg-api" placeholder="https://tinywebdb.appinventor.space/api">
+            <label>用户名</label>
+            <input type="text" id="cfg-user" placeholder="share1">
+            <label>密钥</label>
+            <input type="text" id="cfg-secret" placeholder="b3280975">
+            <label>标签</label>
+            <input type="text" id="cfg-tag" placeholder="code">
+            <label>刷新间隔 (毫秒)</label>
+            <input type="number" id="cfg-interval" placeholder="1500">
+            <button class="save-btn" onclick="saveConfig()">保存并开始</button>
+        </div>
+
+        <div class="history" id="history-section">
+            <div class="history-title">📜 历史记录</div>
+            <div class="history-list" id="history-list"></div>
+        </div>
+
+        <div class="footer">QRDeliver 协议 · TinyWebDB</div>
+    </div>
+
+    <script>
+        // ================= 配置（默认值与 QRDeliver 原版完全一致） =================
+        var API_URL = "https://tinywebdb.appinventor.space/api";
+        var CONFIG = { user: "share1", secret: "b3280975", tag: "code" };
+        var REFRESH_INTERVAL = 1500;
+
+        var timer = null, startTime = 0, isRefreshing = false;
+        var updateCount = 0, lastContent = "", history = [];
+
+        // ================= localStorage 持久化 =================
+        function loadSavedConfig() {
+            try {
+                var s = localStorage.getItem("qr_receiver_cfg");
+                if (!s) return;
+                var c = JSON.parse(s);
+                if (c.api) API_URL = c.api;
+                if (c.user !== undefined) CONFIG.user = c.user;
+                if (c.secret !== undefined) CONFIG.secret = c.secret;
+                if (c.tag) CONFIG.tag = c.tag;
+                if (c.interval) REFRESH_INTERVAL = c.interval;
+            } catch (_) { }
+        }
+
+        function saveConfig() {
+            API_URL = document.getElementById("cfg-api").value.trim() || API_URL;
+            CONFIG.user = document.getElementById("cfg-user").value.trim();
+            CONFIG.secret = document.getElementById("cfg-secret").value.trim();
+            CONFIG.tag = document.getElementById("cfg-tag").value.trim() || "code";
+            REFRESH_INTERVAL = parseInt(document.getElementById("cfg-interval").value) || 1500;
+            localStorage.setItem("qr_receiver_cfg", JSON.stringify({
+                api: API_URL, user: CONFIG.user, secret: CONFIG.secret,
+                tag: CONFIG.tag, interval: REFRESH_INTERVAL
+            }));
+            document.getElementById("config-panel").classList.remove("show");
+            startTimer();
+            fetchData();
+        }
+
+        function toggleConfig() {
+            var p = document.getElementById("config-panel");
+            p.classList.toggle("show");
+            if (p.classList.contains("show")) {
+                document.getElementById("cfg-api").value = API_URL;
+                document.getElementById("cfg-user").value = CONFIG.user;
+                document.getElementById("cfg-secret").value = CONFIG.secret;
+                document.getElementById("cfg-tag").value = CONFIG.tag;
+                document.getElementById("cfg-interval").value = REFRESH_INTERVAL;
+            }
+        }
+
+        // ================= URL 参数覆盖 =================
+        function loadFromUrl() {
+            var p = new URLSearchParams(location.search);
+            if (p.has("api")) API_URL = p.get("api");
+            if (p.has("user")) CONFIG.user = p.get("user");
+            if (p.has("secret")) CONFIG.secret = p.get("secret");
+            if (p.has("tag")) CONFIG.tag = p.get("tag");
+            if (p.has("interval")) REFRESH_INTERVAL = parseInt(p.get("interval")) || 1500;
+        }
+
+        // ================= 核心：与 QRDeliver / TinyWebDB 协议完全一致 =================
+        function startTimer() {
+            startTime = Date.now();
+            if (timer) clearInterval(timer);
+            timer = setInterval(function () {
+                var remaining = Math.max(0, REFRESH_INTERVAL - (Date.now() - startTime));
+                document.getElementById("progress-bar").style.width = (remaining / REFRESH_INTERVAL * 100) + "%";
+                if (remaining <= 0) { fetchData(); startTime = Date.now(); }
+            }, 50);
+        }
+
+        function manualRefresh() {
+            if (isRefreshing) return;
+            fetchData();
+            startTime = Date.now();
+            document.getElementById("progress-bar").style.width = "100%";
+        }
+
+        async function fetchData() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+
+            var btn = document.getElementById("refresh-btn");
+            var errorBox = document.getElementById("error-box");
+            var contentDisplay = document.getElementById("content-display");
+            var timeDisplay = document.getElementById("time-display");
+
+            btn.disabled = true;
+            btn.innerText = "刷新中...";
+            errorBox.style.display = "none";
+
+            // 与 QRDeliver 原版 QRReciever.html 完全一致的 POST 请求
+            var formData = new URLSearchParams();
+            formData.append("user", CONFIG.user);
+            formData.append("secret", CONFIG.secret);
+            formData.append("action", "get");
+            formData.append("tag", CONFIG.tag);
+
+            try {
+                var response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                var data = await response.json();
+
+                // --- 与 QRReciever.html 完全一致的解析逻辑 ---
+                var rawValue = "";
+                if (data && typeof data === "object" && data.value !== undefined) {
+                    rawValue = data.value;
+                } else if (typeof data === "string") {
+                    rawValue = data;
+                } else {
+                    rawValue = JSON.stringify(data);
+                }
+
+                var finalContent = rawValue;
+
+                // 尝试解析内部 JSON（如 "{"code":"xxx"}"）
+                if (typeof rawValue === "string") {
+                    try {
+                        var parsedObj = JSON.parse(rawValue);
+                        if (parsedObj && typeof parsedObj === "object" && parsedObj.hasOwnProperty("code")) {
+                            finalContent = parsedObj.code;
+                        } else if (typeof parsedObj !== "object" || parsedObj === null) {
+                            finalContent = parsedObj;
+                        }
+                    } catch (e) {
+                        // 非 JSON 字符串，直接使用原值
+                    }
+                }
+                // --- 解析结束 ---
+
+                if (finalContent === "" || finalContent === "null" || finalContent === undefined) {
+                    contentDisplay.innerText = "(空值)";
+                    clearQR();
+                    timeDisplay.innerText = "未获取到有效内容 - " + new Date().toLocaleTimeString();
+                } else {
+                    var s = String(finalContent);
+                    contentDisplay.innerText = s;
+                    generateQR(s);
+                    timeDisplay.innerText = "刷新时间: " + new Date().toLocaleTimeString();
+                    if (s !== lastContent) {
+                        lastContent = s;
+                        updateCount++;
+                        addHistory(s);
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                errorBox.innerText = "获取失败: " + error.message;
+                errorBox.style.display = "block";
+                contentDisplay.innerText = "错误";
+                clearQR();
+            } finally {
+                isRefreshing = false;
+                btn.disabled = false;
+                btn.innerText = "立即刷新";
+            }
+        }
+
+        function generateQR(text) {
+            var container = document.getElementById("qrcode-container");
+            container.innerHTML = "";
+            try {
+                new QRCode(container, {
+                    text: text,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } catch (e) {
+                container.innerHTML = "<span style='color:red'>生成失败</span>";
+            }
+        }
+
+        function clearQR() {
+            document.getElementById("qrcode-container").innerHTML =
+                "<span class=\"placeholder\">暂无数据</span>";
+        }
+
+        function addHistory(content) {
+            var now = new Date().toLocaleTimeString();
+            history.unshift({ t: now, c: content });
+            if (history.length > 20) history.pop();
+
+            var section = document.getElementById("history-section");
+            var list = document.getElementById("history-list");
+            section.style.display = "block";
+            list.innerHTML = history.map(function (h) {
+                var preview = h.c.substring(0, 40) + (h.c.length > 40 ? "..." : "");
+                return "<div class=\"history-item\"><span>" + h.t + "</span><span>" + preview + "</span></div>";
+            }).join("");
+        }
+
+        // ================= 启动 =================
+        window.onload = function () {
+            loadFromUrl();
+            loadSavedConfig();
+            fetchData();
+            startTimer();
+        };
+    </script>
+</body>
+
+</html>

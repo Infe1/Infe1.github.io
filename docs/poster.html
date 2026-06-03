@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>签到码推送器（义父端）</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --bg: #f0f2f5;
+            --card: #fff;
+            --text: #333;
+            --muted: #999;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .1);
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            color: #333;
+            margin-bottom: .5rem;
+        }
+
+        .subtitle {
+            font-size: .85rem;
+            color: var(--muted);
+            margin-bottom: 1.2rem;
+        }
+
+        /* 状态指示 */
+        .status-box {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            display: none;
+            font-size: .9rem;
+        }
+
+        .status-idle {
+            background: #e0e0e0;
+            color: #555;
+        }
+
+        .status-loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        /* 扫描区域 */
+        #reader {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 20px;
+        }
+
+        /* html5-qrcode 样式覆盖 */
+        #reader img[alt="Info icon"] {
+            display: none;
+        }
+
+        #reader__scan_region {
+            min-height: 250px;
+        }
+
+        #reader__dashboard_section {
+            padding: 8px;
+        }
+
+        #reader__dashboard_section button {
+            background: var(--primary) !important;
+            color: #fff !important;
+            border: none !important;
+            padding: 8px 16px !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            margin: 4px !important;
+            font-size: .9rem !important;
+        }
+
+        #reader__dashboard_section select,
+        #reader__dashboard_section input {
+            padding: 6px 10px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            font-size: .85rem !important;
+        }
+
+        /* 结果区域 */
+        .result-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 8px;
+            display: none;
+            word-break: break-all;
+            text-align: left;
+        }
+
+        .result-label {
+            font-weight: bold;
+            color: #2e7d32;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .result-text {
+            color: #1b5e20;
+            font-size: 1.1rem;
+        }
+
+        .result-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: #2e7d32;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: .9rem;
+        }
+
+        .db-status {
+            margin-top: 8px;
+            font-size: .85rem;
+            color: #666;
+        }
+
+        /* 配置 */
+        .config-panel {
+            display: none;
+            margin-top: 16px;
+            padding: 14px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .config-panel.show {
+            display: block;
+        }
+
+        .config-panel label {
+            display: block;
+            font-size: .75rem;
+            color: #666;
+            margin-top: 8px;
+            margin-bottom: 2px;
+        }
+
+        .config-panel label:first-child {
+            margin-top: 0;
+        }
+
+        .config-panel input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: .85rem;
+        }
+
+        .config-panel input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .controls {
+            margin-top: 16px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: .9rem;
+            transition: background .2s;
+        }
+
+        button:hover {
+            background: #1b5e20;
+        }
+
+        button.secondary {
+            background: #e8e8e8;
+            color: #333;
+        }
+
+        button.secondary:hover {
+            background: #d5d5d5;
+        }
+
+        .save-btn {
+            margin-top: 10px;
+            width: 100%;
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .footer {
+            margin-top: 18px;
+            color: #ddd;
+            font-size: .7rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <h1>📷 签到码推送器</h1>
+        <div class="subtitle">扫描签到二维码，自动推送到接收端</div>
+
+        <div id="status-box" class="status-idle">准备就绪</div>
+
+        <div id="reader"></div>
+
+        <div class="result-container" id="result-container">
+            <span class="result-label">最新扫描:</span>
+            <div id="result-text"></div>
+            <a id="result-link" href="#" target="_blank" class="result-link" style="display:none;">访问链接</a>
+            <div class="db-status" id="db-status-detail"></div>
+        </div>
+
+        <div class="controls">
+            <button class="secondary" onclick="toggleConfig()">⚙ 配置</button>
+        </div>
+
+        <div class="config-panel" id="config-panel">
+            <label>API 地址</label>
+            <input type="text" id="cfg-api" placeholder="https://tinywebdb.appinventor.space/api">
+            <label>用户名</label>
+            <input type="text" id="cfg-user" placeholder="share1">
+            <label>密钥</label>
+            <input type="text" id="cfg-secret" placeholder="b3280975">
+            <label>标签</label>
+            <input type="text" id="cfg-tag" placeholder="code">
+            <button class="save-btn" onclick="saveConfig()">保存</button>
+        </div>
+
+        <div class="footer">QRDeliver 协议 · 扫码后自动推送到 TinyWebDB</div>
+    </div>
+
+    <script>
+        // ================= 配置 =================
+        var DB_CONFIG = {
+            baseUrl: "https://tinywebdb.appinventor.space/api",
+            user: "share1",
+            secret: "b3280975",
+            tag: "code"
+        };
+
+        var html5QrcodeScanner = null;
+        var isSaving = false;
+
+        // DOM
+        var statusBox = document.getElementById("status-box");
+        var resultContainer = document.getElementById("result-container");
+        var resultText = document.getElementById("result-text");
+        var resultLink = document.getElementById("result-link");
+        var dbStatusDetail = document.getElementById("db-status-detail");
+
+        // ================= localStorage =================
+        function loadSavedConfig() {
+            try {
+                var s = localStorage.getItem("qr_poster_cfg");
+                if (!s) return;
+                var c = JSON.parse(s);
+                if (c.api) DB_CONFIG.baseUrl = c.api;
+                if (c.user !== undefined) DB_CONFIG.user = c.user;
+                if (c.secret !== undefined) DB_CONFIG.secret = c.secret;
+                if (c.tag) DB_CONFIG.tag = c.tag;
+            } catch (_) { }
+        }
+
+        function saveConfig() {
+            DB_CONFIG.baseUrl = document.getElementById("cfg-api").value.trim() || DB_CONFIG.baseUrl;
+            DB_CONFIG.user = document.getElementById("cfg-user").value.trim();
+            DB_CONFIG.secret = document.getElementById("cfg-secret").value.trim();
+            DB_CONFIG.tag = document.getElementById("cfg-tag").value.trim() || "code";
+            localStorage.setItem("qr_poster_cfg", JSON.stringify({
+                api: DB_CONFIG.baseUrl, user: DB_CONFIG.user,
+                secret: DB_CONFIG.secret, tag: DB_CONFIG.tag
+            }));
+            document.getElementById("config-panel").classList.remove("show");
+            updateStatus("idle", "配置已保存");
+        }
+
+        function toggleConfig() {
+            var p = document.getElementById("config-panel");
+            p.classList.toggle("show");
+            if (p.classList.contains("show")) {
+                document.getElementById("cfg-api").value = DB_CONFIG.baseUrl;
+                document.getElementById("cfg-user").value = DB_CONFIG.user;
+                document.getElementById("cfg-secret").value = DB_CONFIG.secret;
+                document.getElementById("cfg-tag").value = DB_CONFIG.tag;
+            }
+        }
+
+        // ================= URL 参数覆盖 =================
+        function loadFromUrl() {
+            var p = new URLSearchParams(location.search);
+            if (p.has("api")) DB_CONFIG.baseUrl = p.get("api");
+            if (p.has("user")) DB_CONFIG.user = p.get("user");
+            if (p.has("secret")) DB_CONFIG.secret = p.get("secret");
+            if (p.has("tag")) DB_CONFIG.tag = p.get("tag");
+        }
+
+        // ================= 状态管理 =================
+        function updateStatus(type, message) {
+            statusBox.style.display = "block";
+            statusBox.className = "status-box status-" + type;
+            statusBox.innerText = message;
+        }
+
+        // ================= 核心：推送到 TinyWebDB（action=update） =================
+        async function saveToTinyWebDB(value) {
+            if (isSaving) return;
+            isSaving = true;
+            updateStatus("loading", "正在保存数据到服务器...");
+            dbStatusDetail.innerText = "";
+
+            // 与 QRDeliver 原版 QRPoster.html 完全一致的 POST 请求
+            var formData = new FormData();
+            formData.append("user", DB_CONFIG.user);
+            formData.append("secret", DB_CONFIG.secret);
+            formData.append("action", "update");
+            formData.append("tag", DB_CONFIG.tag);
+            formData.append("value", value);
+
+            try {
+                var response = await fetch(DB_CONFIG.baseUrl, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (response.ok) {
+                    var text = await response.text();
+                    console.log("服务器响应:", text);
+                    updateStatus("success", "保存成功!");
+                    dbStatusDetail.innerText = "已同步至云端数据库";
+                    setTimeout(function () {
+                        if (statusBox.classList.contains("status-success")) {
+                            updateStatus("idle", "等待下一次扫描...");
+                        }
+                        isSaving = false;
+                    }, 2000);
+                } else {
+                    throw new Error("HTTP " + response.status);
+                }
+            } catch (error) {
+                console.error("保存失败:", error);
+                updateStatus("error", "保存失败 (可能是网络或跨域限制)");
+                dbStatusDetail.innerText = "错误详情: " + error.message;
+                isSaving = false;
+            }
+        }
+
+        // ================= 扫码回调 =================
+        function onScanSuccess(decodedText, decodedResult) {
+            // 显示扫描结果
+            resultContainer.style.display = "block";
+            resultText.innerText = decodedText;
+
+            // 检测是否为 URL
+            try { new URL(decodedText); resultLink.href = decodedText; resultLink.style.display = "inline-block"; }
+            catch (_) { resultLink.style.display = "none"; }
+
+            // 推送到 TinyWebDB
+            saveToTinyWebDB(decodedText);
+        }
+
+        function onScanFailure(error) {
+            // 忽略实时扫描中的常规错误
+        }
+
+        // ================= 初始化扫描器 =================
+        function initScanner() {
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader",
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    videoConstraints: { facingMode: "environment" }
+                },
+                false
+            );
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            updateStatus("idle", "摄像头已启动，请对准二维码");
+        }
+
+        // ================= 启动 =================
+        window.addEventListener("load", function () {
+            loadFromUrl();
+            loadSavedConfig();
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateStatus("error", "浏览器不支持摄像头访问，请使用 HTTPS 页面");
+                return;
+            }
+            initScanner();
+        });
+    </script>
+</body>
+
+</html>
