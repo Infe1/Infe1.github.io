@@ -276,11 +276,11 @@
             <label>API 地址</label>
             <input type="text" id="cfg-api" placeholder="https://tinywebdb.appinventor.space/api">
             <label>用户名</label>
-            <input type="text" id="cfg-user" placeholder="share1">
+            <input type="text" id="cfg-user" placeholder="infe1">
             <label>密钥</label>
-            <input type="text" id="cfg-secret" placeholder="b3280975">
+            <input type="text" id="cfg-secret" placeholder="d1f614c8">
             <label>标签</label>
-            <input type="text" id="cfg-tag" placeholder="code">
+            <input type="text" id="cfg-tag" placeholder="infe_checkin_6688">
             <button class="save-btn" onclick="saveConfig()">保存</button>
         </div>
 
@@ -291,9 +291,9 @@
         // ================= 配置 =================
         var DB_CONFIG = {
             baseUrl: "https://tinywebdb.appinventor.space/api",
-            user: "share1",
-            secret: "b3280975",
-            tag: "code"
+            user: "infe1",
+            secret: "d1f614c8",
+            tag: "infe_checkin_6688"
         };
 
         var html5QrcodeScanner = null;
@@ -323,7 +323,7 @@
             DB_CONFIG.baseUrl = document.getElementById("cfg-api").value.trim() || DB_CONFIG.baseUrl;
             DB_CONFIG.user = document.getElementById("cfg-user").value.trim();
             DB_CONFIG.secret = document.getElementById("cfg-secret").value.trim();
-            DB_CONFIG.tag = document.getElementById("cfg-tag").value.trim() || "code";
+            DB_CONFIG.tag = document.getElementById("cfg-tag").value.trim() || "infe_checkin_6688";
             localStorage.setItem("qr_poster_cfg", JSON.stringify({
                 api: DB_CONFIG.baseUrl, user: DB_CONFIG.user,
                 secret: DB_CONFIG.secret, tag: DB_CONFIG.tag

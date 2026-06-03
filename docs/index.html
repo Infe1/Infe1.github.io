@@ -265,11 +265,11 @@
             <label>API 地址</label>
             <input type="text" id="cfg-api" placeholder="https://tinywebdb.appinventor.space/api">
             <label>用户名</label>
-            <input type="text" id="cfg-user" placeholder="share1">
+            <input type="text" id="cfg-user" placeholder="infe1">
             <label>密钥</label>
-            <input type="text" id="cfg-secret" placeholder="b3280975">
+            <input type="text" id="cfg-secret" placeholder="d1f614c8">
             <label>标签</label>
-            <input type="text" id="cfg-tag" placeholder="code">
+            <input type="text" id="cfg-tag" placeholder="infe_checkin_6688">
             <label>刷新间隔 (毫秒)</label>
             <input type="number" id="cfg-interval" placeholder="1500">
             <button class="save-btn" onclick="saveConfig()">保存并开始</button>
@@ -286,7 +286,7 @@
     <script>
         // ================= 配置（默认值与 QRDeliver 原版完全一致） =================
         var API_URL = "https://tinywebdb.appinventor.space/api";
-        var CONFIG = { user: "share1", secret: "b3280975", tag: "code" };
+        var CONFIG = { user: "infe1", secret: "d1f614c8", tag: "infe_checkin_6688" };
         var REFRESH_INTERVAL = 1500;
 
         var timer = null, startTime = 0, isRefreshing = false;
@@ -310,7 +310,7 @@
             API_URL = document.getElementById("cfg-api").value.trim() || API_URL;
             CONFIG.user = document.getElementById("cfg-user").value.trim();
             CONFIG.secret = document.getElementById("cfg-secret").value.trim();
-            CONFIG.tag = document.getElementById("cfg-tag").value.trim() || "code";
+            CONFIG.tag = document.getElementById("cfg-tag").value.trim() || "infe_checkin_6688";
             REFRESH_INTERVAL = parseInt(document.getElementById("cfg-interval").value) || 1500;
             localStorage.setItem("qr_receiver_cfg", JSON.stringify({
                 api: API_URL, user: CONFIG.user, secret: CONFIG.secret,
